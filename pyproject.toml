@@ -1,7 +1,25 @@
 [project]
 name = "copy-dir"
 version = "0.1.0"
-description = "Add your description here"
+description = "Copy a git-aware directory dump to the clipboard"
 readme = "README.md"
 requires-python = ">=3.9.7"
-dependencies = []
+dependencies = [
+    "gitignore-parser>=0.1.13",
+    "pathspec>=0.12.1",
+    "pyperclip>=1.9.0",
+]
+
+[project.scripts]
+xtree = "xtree:main"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["xtree"]
+
+
+[tool.black]
+line-length = 127
