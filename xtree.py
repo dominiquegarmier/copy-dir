@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Callable
 from typing import Generator
@@ -14,7 +16,13 @@ from gitignore_parser import parse_gitignore_str
 BASE_IGNORE = [
     ".git/",
     ".DS_Store",
+    "*.lock",
+    "__pycache__/",
+    "*.pyc",
+    "node_modules/",
 ]
+
+MAX_LINES_FOR_CLIPBOARD = 512
 
 
 def crawl_directory(
@@ -48,8 +56,8 @@ def jank_file(path: Path) -> list[str]:
     ret = []
     ret.append(f"file: {path.absolute()}")
     with path.open("r", errors="ignore") as f:
-        for l in f:
-            ret.append(l.rstrip("\n"))
+        for line in f:
+            ret.append(line.rstrip("\n"))
     ret.append("-" * 24)
     return ret
 
@@ -71,7 +79,32 @@ def main() -> int:
     for path in git_aware_tree(directory):
         lines.extend(jank_file(path))
 
+    print("hello")
+
+    if len(lines) > MAX_LINES_FOR_CLIPBOARD:
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt")
+        tmp_path = Path(tmp.name)
+        with tmp_path.open("w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        tmp.close()
+
+        try:
+            subprocess.run(
+                [
+                    "osascript",
+                    "-e",
+                    f'set the clipboard to (POSIX file "{tmp_path.absolute()}")',
+                ],
+                check=True,
+            )
+            print(f"copied {os.stat(tmp_path).st_size} bytes file to clipboard")
+        except subprocess.CalledProcessError:
+            print("copying files to clipboard failed, falling back to text...")
+        else:
+            return 0
+
     pyperclip.copy("\n".join(lines))
+    print(f"copied {len(lines)} lines to clipboard")
     return 0
 
 
